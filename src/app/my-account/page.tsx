@@ -102,6 +102,29 @@ export default function MyAccountPage() {
             </p>
           </div>
 
+          {/* Admin Access Notice Banner */}
+          {(session as any)?.user?.role === "admin" && (
+            <div className="mb-8 p-4 bg-[#FDFCF7] border border-[#D4AF37]/30 rounded flex flex-col sm:flex-row items-center justify-between gap-4 shadow-xs">
+              <div className="flex items-center gap-3">
+                <span className="text-xl">🔑</span>
+                <div className="text-left">
+                  <p className="text-xs font-bold uppercase tracking-wider text-[#111111]">
+                    Administrator Session Active
+                  </p>
+                  <p className="text-[10px] text-gray-500 font-medium">
+                    You are logged in with the super administrator email.
+                  </p>
+                </div>
+              </div>
+              <Link
+                href="/admin/dashboard"
+                className="bg-[#5B112B] hover:bg-[#3d0b1d] text-white text-[10px] font-bold tracking-widest uppercase px-6 py-2.5 rounded-sm transition-colors shadow-xs cursor-pointer whitespace-nowrap"
+              >
+                Enter Control Panel
+              </Link>
+            </div>
+          )}
+
           {/* Dashboard Panel Cards */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
             
@@ -144,12 +167,22 @@ export default function MyAccountPage() {
 
             <div className="border-t border-black/5 pt-6 flex flex-col sm:flex-row justify-between items-center gap-4">
               <p className="text-xs text-gray-400 font-medium">To modify your credentials or delete your records, contact support.</p>
-              <button
-                onClick={() => signOut({ callbackUrl: "/my-account" })}
-                className="bg-[#5B112B] hover:bg-[#3d0b1d] text-white text-[10.5px] font-bold tracking-widest uppercase px-8 py-3 rounded-sm transition-colors shadow-sm cursor-pointer whitespace-nowrap"
-              >
-                Sign Out
-              </button>
+              <div className="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto">
+                {(session as any)?.user?.role === "admin" && (
+                  <Link
+                    href="/admin/dashboard"
+                    className="w-full sm:w-auto bg-[#D4AF37] hover:bg-[#c59f28] text-[#111111] text-[10.5px] font-bold tracking-widest uppercase px-8 py-3 rounded-sm transition-colors shadow-sm cursor-pointer whitespace-nowrap text-center"
+                  >
+                    Go to Admin Dashboard
+                  </Link>
+                )}
+                <button
+                  onClick={() => signOut({ callbackUrl: "/my-account" })}
+                  className="w-full sm:w-auto bg-[#5B112B] hover:bg-[#3d0b1d] text-white text-[10.5px] font-bold tracking-widest uppercase px-8 py-3 rounded-sm transition-colors shadow-sm cursor-pointer whitespace-nowrap"
+                >
+                  Sign Out
+                </button>
+              </div>
             </div>
           </div>
 
