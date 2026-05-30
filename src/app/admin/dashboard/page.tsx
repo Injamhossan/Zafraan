@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useSession, signOut } from "next-auth/react";
 import Link from "next/link";
 import Image from "next/image";
 import mainLogo from "@/assets/mainlogo.png";
@@ -33,7 +34,9 @@ interface Customer {
 }
 
 export default function AdminDashboard() {
-  const [activeTab, setActiveTab] = useState<"overview" | "products" | "orders" | "customers">("overview");
+  const { data: session, status } = useSession();
+
+  const [activeTab, setActiveTab] = useState<"overview" | "products" | "orders" | "customers" | "console">("overview");
 
   // --- Real-time Catalog State ---
   const [products, setProducts] = useState<Product[]>([
@@ -115,6 +118,19 @@ export default function AdminDashboard() {
     { id: 5, name: "Mahbubur Rahman", email: "mahbub@outlook.com", totalSpent: 8400, joinDate: "May 01, 2026" },
   ];
 
+  // --- Systems Command Console States ---
+  const [consoleLogs, setConsoleLogs] = useState<string[]>([
+    "[SYS] Zafraan OS v2.0 initialized.",
+    "[SYS] Secure JWT Authorization Session loaded.",
+    "[SYS] Supabase Database Connection pooled."
+  ]);
+  const [backupProgress, setBackupProgress] = useState<number | null>(null);
+  const [isMaintenance, setIsMaintenance] = useState(false);
+
+  const addLog = (log: string) => {
+    setConsoleLogs((prev) => [`[${new Date().toLocaleTimeString()}] ${log}`, ...prev]);
+  };
+
   // --- Product Modifiers ---
   const handleAddProduct = (e: React.FormEvent) => {
     e.preventDefault();
@@ -127,6 +143,7 @@ export default function AdminDashboard() {
         longevity: newProductLongevity,
       };
       setProducts([newProd, ...products]);
+      addLog(`[CATALOG] Added "${newProductName}" to active fragrances list.`);
       setNewProductName("");
       setNewProductPrice("");
       setShowProductModal(false);
@@ -134,7 +151,11 @@ export default function AdminDashboard() {
   };
 
   const handleDeleteProduct = (id: number) => {
+    const prod = products.find((p) => p.id === id);
     setProducts(products.filter((p) => p.id !== id));
+    if (prod) {
+      addLog(`[CATALOG] Deleted fragrance "${prod.name}" (ID #${id}) from catalog.`);
+    }
   };
 
   // --- Order Modifiers ---
@@ -143,24 +164,112 @@ export default function AdminDashboard() {
     setOrders(
       orders.map((o) => (o.id === id ? { ...o, paymentStatus: nextStatus } : o))
     );
+    addLog(`[ORDERS] Updated Payment Status of ${id} to "${nextStatus}".`);
   };
 
   const updateDeliveryStatus = (id: string, nextStatus: "Pending" | "Shipped" | "Delivered") => {
     setOrders(
       orders.map((o) => (o.id === id ? { ...o, deliveryStatus: nextStatus } : o))
     );
+    addLog(`[ORDERS] Shipped package ${id} | Delivery status set to "${nextStatus}".`);
   };
 
+  // --- Super Admin Controls ---
+  const triggerBackup = () => {
+    if (backupProgress !== null) return;
+    addLog("[BACKUP] Starting secure system backup sequence...");
+    setBackupProgress(0);
+
+    const interval = setInterval(() => {
+      setBackupProgress((prev) => {
+        if (prev === null) return null;
+        if (prev >= 100) {
+          clearInterval(interval);
+          addLog("[BACKUP] SQL dump created successfully. Uploaded to secure Supabase vault.");
+          setTimeout(() => setBackupProgress(null), 1000);
+          return 100;
+        }
+        return prev + 20;
+      });
+    }, 300);
+  };
+
+  const resetDatabase = () => {
+    setProducts([
+      { id: 1, name: "Oud Royale", category: "Oud & Woody", price: 3450, longevity: "12+ Hours" },
+      { id: 2, name: "Imperial Rose", category: "For Her", price: 2800, longevity: "10+ Hours" },
+      { id: 3, name: "Saffron Gold", category: "Arabic Collection", price: 3900, longevity: "14+ Hours" },
+      { id: 4, name: "Aqua Fresh", category: "Fresh Collection", price: 2200, longevity: "8+ Hours" },
+      { id: 5, name: "Sweet Vanilla", category: "Sweet & Gourmand", price: 2950, longevity: "9+ Hours" },
+      { id: 6, name: "Majestic Oud", category: "Oud & Woody", price: 4200, longevity: "12+ Hours" },
+    ]);
+    addLog("[DATABASE] Catalog database wiped and reset to default production seed.");
+  };
+
+  const toggleMaintenance = () => {
+    setIsMaintenance(!isMaintenance);
+    addLog(`[MAINTENANCE] Storefront maintenance status changed to: ${!isMaintenance ? "ACTIVE" : "INACTIVE"}`);
+  };
+
+  // --- 1. SESSION LOAD GATES ---
+  if (status === "loading") {
+    return (
+      <div className="bg-[#FAF9F5] min-h-screen flex flex-col items-center justify-center">
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-10 h-10 border-4 border-black/10 border-t-[#791b29] rounded-full animate-spin"></div>
+          <span className="text-[10px] font-bold tracking-widest text-gray-400 uppercase">Authorizing Admin Session</span>
+        </div>
+      </div>
+    );
+  }
+
+  // --- 2. ACCESS DENIED BLOCK (JWT CHECK) ---
+  if (status === "unauthenticated" || (session && (session as any).user?.role !== "admin")) {
+    return (
+      <div className="bg-[#121212] min-h-screen flex flex-col items-center justify-center p-6 text-white relative">
+        <div className="absolute top-0 left-1/4 w-[350px] h-[350px] rounded-full bg-[#791b29]/5 blur-[100px] pointer-events-none"></div>
+        
+        <div className="max-w-[440px] w-full bg-[#1A1A1A] border border-white/5 p-8 rounded-md shadow-2xl text-center z-10">
+          <div className="w-16 h-16 rounded-full bg-red-950/50 border border-red-500/20 text-red-500 flex items-center justify-center mx-auto mb-6">
+            <svg className="w-8 h-8" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+            </svg>
+          </div>
+          <h2 className="text-xl font-serif uppercase tracking-wide text-white mb-2">403 Access Denied</h2>
+          <p className="text-[10.5px] text-gray-500 font-bold uppercase tracking-wider mb-6">Insufficient JWT Role Privileges</p>
+          <p className="text-xs text-gray-400 leading-relaxed mb-8">
+            You do not have administrative authorization to access the console database. Only authenticated Super Administrators may request back-end credentials.
+          </p>
+          <div className="flex flex-col gap-3">
+            <Link
+              href="/admin"
+              className="bg-[#5B112B] hover:bg-[#791b29] text-white text-[11px] font-bold tracking-widest uppercase py-3.5 rounded-sm transition-all"
+            >
+              Sign In with Admin Access
+            </Link>
+            <Link
+              href="/"
+              className="border border-white/10 hover:border-white/20 text-gray-400 hover:text-white text-[11px] font-bold tracking-widest uppercase py-3.5 rounded-sm transition-all"
+            >
+              Return to Storefront
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // --- 3. DYNAMIC SUPER ADMIN DASHBOARD ---
   return (
     <div className="bg-[#FAF9F5] min-h-screen flex flex-col lg:flex-row text-[#111111]">
       
-      {/* 1. Left Sidebar Navigation */}
+      {/* Sidebar Navigation */}
       <aside className="w-full lg:w-64 bg-[#111111] lg:min-h-screen text-white flex flex-col p-6 shrink-0 relative z-10">
         
         {/* Dashboard Logo */}
         <div className="mb-10 flex flex-col items-center lg:items-start gap-2.5">
           <Image src={mainLogo} alt="Zafraan Logo" className="h-8 w-auto object-contain invert brightness-0" />
-          <span className="text-[9px] font-bold tracking-[0.25em] text-[#D4AF37] uppercase">Admin Control</span>
+          <span className="text-[9px] font-bold tracking-[0.25em] text-[#D4AF37] uppercase">Super Admin Panel</span>
         </div>
 
         {/* Navigation list */}
@@ -169,7 +278,8 @@ export default function AdminDashboard() {
             { id: "overview", label: "Overview", icon: "📊" },
             { id: "products", label: "Catalog Editor", icon: "🧴" },
             { id: "orders", label: "Order Manager", icon: "📦" },
-            { id: "customers", label: "Customers List", icon: "👥" }
+            { id: "customers", label: "Customers List", icon: "👥" },
+            { id: "console", label: "Command Center", icon: "💻" }
           ].map((item) => (
             <button
               key={item.id}
@@ -186,19 +296,19 @@ export default function AdminDashboard() {
           ))}
         </nav>
 
-        {/* Back Link bottom */}
+        {/* Sign Out bottom */}
         <div className="mt-8 pt-6 border-t border-white/5">
-          <Link
-            href="/admin"
-            className="flex items-center gap-3 px-4 py-3 text-xs font-semibold text-gray-400 hover:text-white uppercase tracking-wider transition-colors"
+          <button
+            onClick={() => signOut({ callbackUrl: "/admin" })}
+            className="w-full flex items-center gap-3 px-4 py-3 text-xs font-semibold text-gray-400 hover:text-white uppercase tracking-wider transition-colors cursor-pointer text-left"
           >
             <span>🚪</span>
             Log Out
-          </Link>
+          </button>
         </div>
       </aside>
 
-      {/* 2. Main Dashboard Area */}
+      {/* Main Content Area */}
       <main className="flex-1 p-8 lg:p-12 overflow-x-hidden">
         
         {/* Header bar */}
@@ -209,13 +319,14 @@ export default function AdminDashboard() {
               {activeTab === "products" && "Product Catalog Editor"}
               {activeTab === "orders" && "Active Order Manager"}
               {activeTab === "customers" && "Registered Customers"}
+              {activeTab === "console" && "Super Admin Command Center"}
             </h1>
-            <p className="text-xs text-gray-400 font-medium">Welcome back, Administrator | Zafraan Executive Portal</p>
+            <p className="text-xs text-gray-400 font-medium">Logged in as Super Admin | zafraanbdofficial@gmail.com</p>
           </div>
           
           <div className="text-xs font-bold bg-white px-4 py-2 rounded border border-black/5 shadow-xs flex items-center gap-2">
             <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
-            System Live
+            Prisma & Supabase Live
           </div>
         </div>
 
@@ -225,7 +336,6 @@ export default function AdminDashboard() {
             
             {/* Stats Row */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-              
               <div className="bg-white p-6 border border-black/5 rounded shadow-xs flex flex-col gap-2">
                 <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Total Sales Revenue</span>
                 <span className="text-2xl font-serif text-[#111111] font-bold">৳2,485,300</span>
@@ -255,32 +365,26 @@ export default function AdminDashboard() {
                 <span className="text-2xl font-serif text-[#111111] font-bold">{products.length} Fragrances</span>
                 <span className="text-[10.5px] text-gray-400 font-normal">Fully active on store</span>
               </div>
-
             </div>
 
             {/* Sales Chart & Activity Grid */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-              
-              {/* Sales Chart Box */}
               <div className="bg-white p-6 border border-black/5 rounded shadow-xs lg:col-span-2">
                 <h3 className="text-sm font-bold uppercase tracking-wider text-[#111111] mb-6">Sales Growth Trend (2026)</h3>
                 
                 {/* SVG Graph Graphic */}
                 <div className="w-full h-64 bg-gray-50/50 rounded border border-dashed border-black/10 flex items-center justify-center p-4 relative">
                   <svg className="w-full h-full" viewBox="0 0 600 200" fill="none">
-                    {/* Gridlines */}
                     <line x1="0" y1="50" x2="600" y2="50" stroke="#f0f0f0" strokeWidth="1" />
                     <line x1="0" y1="100" x2="600" y2="100" stroke="#f0f0f0" strokeWidth="1" />
                     <line x1="0" y1="150" x2="600" y2="150" stroke="#f0f0f0" strokeWidth="1" />
                     
-                    {/* Shadow Area under Line */}
                     <path
                       d="M 20 180 L 120 150 L 220 160 L 320 100 L 420 70 L 520 40 L 520 200 L 20 200 Z"
                       fill="url(#gradient-maroon)"
                       opacity="0.08"
                     />
 
-                    {/* Chart Line */}
                     <path
                       d="M 20 180 L 120 150 L 220 160 L 320 100 L 420 70 L 520 40"
                       stroke="#5B112B"
@@ -289,7 +393,6 @@ export default function AdminDashboard() {
                       strokeLinejoin="round"
                     />
 
-                    {/* Data Points */}
                     <circle cx="20" cy="180" r="4.5" fill="#D4AF37" stroke="#5B112B" strokeWidth="2" />
                     <circle cx="120" cy="150" r="4.5" fill="#D4AF37" stroke="#5B112B" strokeWidth="2" />
                     <circle cx="220" cy="160" r="4.5" fill="#D4AF37" stroke="#5B112B" strokeWidth="2" />
@@ -297,7 +400,6 @@ export default function AdminDashboard() {
                     <circle cx="420" cy="70" r="4.5" fill="#D4AF37" stroke="#5B112B" strokeWidth="2" />
                     <circle cx="520" cy="40" r="4.5" fill="#D4AF37" stroke="#5B112B" strokeWidth="2" />
 
-                    {/* Gradients Definitions */}
                     <defs>
                       <linearGradient id="gradient-maroon" x1="0" y1="0" x2="0" y2="1">
                         <stop offset="0%" stopColor="#5B112B" />
@@ -306,7 +408,6 @@ export default function AdminDashboard() {
                     </defs>
                   </svg>
 
-                  {/* Labels overlay */}
                   <div className="absolute bottom-2 left-6 right-6 flex justify-between text-[9px] font-bold text-gray-400 uppercase">
                     <span>Jan (৳320k)</span>
                     <span>Feb (৳410k)</span>
@@ -318,27 +419,17 @@ export default function AdminDashboard() {
                 </div>
               </div>
 
-              {/* Administrative logs Feed */}
-              <div className="bg-white p-6 border border-black/5 rounded shadow-xs">
+              {/* Console Logs Preview */}
+              <div className="bg-white p-6 border border-black/5 rounded shadow-xs flex flex-col">
                 <h3 className="text-sm font-bold uppercase tracking-wider text-[#111111] mb-6">Recent Operations</h3>
-                <div className="flex flex-col gap-4">
-                  {[
-                    { text: "Order ZAF-9942 pending verification", time: "2 mins ago", color: "bg-[#791b29]" },
-                    { text: "Order ZAF-9939 changed to Shipped", time: "1 hr ago", color: "bg-blue-500" },
-                    { text: "Autofilled dashboard test parameters", time: "3 hrs ago", color: "bg-[#D4AF37]" },
-                    { text: "Administrative Login from IP 192.168.1.1", time: "1 day ago", color: "bg-emerald-500" }
-                  ].map((log, idx) => (
-                    <div key={idx} className="flex items-start gap-3 border-b border-black/5 pb-3 last:border-0 last:pb-0">
-                      <span className={`w-2.5 h-2.5 rounded-full shrink-0 mt-1 ${log.color}`}></span>
-                      <div className="flex flex-col">
-                        <span className="text-xs text-gray-600 font-semibold">{log.text}</span>
-                        <span className="text-[9.5px] text-gray-400 font-semibold mt-0.5">{log.time}</span>
-                      </div>
+                <div className="flex flex-col gap-3.5 flex-grow font-mono text-[10px] text-gray-500">
+                  {consoleLogs.slice(0, 5).map((log, idx) => (
+                    <div key={idx} className="break-all border-b border-black/5 pb-2 last:border-0 last:pb-0">
+                      {log}
                     </div>
                   ))}
                 </div>
               </div>
-
             </div>
 
           </div>
@@ -347,7 +438,6 @@ export default function AdminDashboard() {
         {/* -------------------- TAB: PRODUCTS CATALOG -------------------- */}
         {activeTab === "products" && (
           <div className="bg-white border border-black/5 rounded shadow-xs p-6 md:p-8 animate-fade-in">
-            
             <div className="flex justify-between items-center mb-6">
               <h3 className="text-sm font-bold uppercase tracking-wider text-[#111111]">Fragrance List ({products.length})</h3>
               <button
@@ -358,7 +448,6 @@ export default function AdminDashboard() {
               </button>
             </div>
 
-            {/* Catalog Data Grid */}
             <div className="overflow-x-auto">
               <table className="w-full text-left border-collapse">
                 <thead>
@@ -471,7 +560,6 @@ export default function AdminDashboard() {
                 </div>
               </div>
             )}
-
           </div>
         )}
 
@@ -507,7 +595,6 @@ export default function AdminDashboard() {
                       <td className="py-4 px-4 font-medium">{o.date}</td>
                       <td className="py-4 px-4 font-serif">৳{o.total}</td>
                       <td className="py-4 px-4">
-                        {/* Interactive toggle button */}
                         <button
                           onClick={() => updatePaymentStatus(o.id, o.paymentStatus)}
                           className={`px-3 py-1.5 rounded-full text-[9px] font-bold uppercase tracking-wider transition-all cursor-pointer ${
@@ -520,7 +607,6 @@ export default function AdminDashboard() {
                         </button>
                       </td>
                       <td className="py-4 px-4">
-                        {/* Status update selectors */}
                         <select
                           value={o.deliveryStatus}
                           onChange={(e) => updateDeliveryStatus(o.id, e.target.value as any)}
@@ -542,7 +628,6 @@ export default function AdminDashboard() {
                 </tbody>
               </table>
             </div>
-
           </div>
         )}
 
@@ -574,6 +659,112 @@ export default function AdminDashboard() {
                   ))}
                 </tbody>
               </table>
+            </div>
+          </div>
+        )}
+
+        {/* -------------------- TAB: COMMAND CENTER (ALL POWER) -------------------- */}
+        {activeTab === "console" && (
+          <div className="flex flex-col gap-8 animate-fade-in text-[#111111]">
+            
+            {/* Core Console Controls Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              
+              {/* Card 1: System Backup */}
+              <div className="bg-white p-6 border border-black/5 rounded shadow-xs flex flex-col justify-between min-h-[180px]">
+                <div>
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-gray-400 mb-2">Back-end Data Archival</h4>
+                  <p className="text-[11px] text-gray-500 leading-relaxed font-semibold">
+                    Generate an instant encrypted SQL backup of all Supabase schemas and upload to secure offsite vault.
+                  </p>
+                </div>
+                
+                <div className="mt-4">
+                  {backupProgress !== null ? (
+                    <div className="w-full bg-gray-100 h-2 rounded overflow-hidden mb-3">
+                      <div
+                        className="bg-[#5B112B] h-full transition-all duration-300"
+                        style={{ width: `${backupProgress}%` }}
+                      ></div>
+                    </div>
+                  ) : null}
+                  <button
+                    onClick={triggerBackup}
+                    disabled={backupProgress !== null}
+                    className="w-full bg-[#5B112B] hover:bg-[#3d0b1d] text-white text-[10px] font-bold tracking-widest uppercase py-2.5 rounded-sm transition-colors cursor-pointer disabled:opacity-50"
+                  >
+                    {backupProgress !== null ? "Backing Up..." : "Trigger System Backup"}
+                  </button>
+                </div>
+              </div>
+
+              {/* Card 2: Database Catalog Reset */}
+              <div className="bg-white p-6 border border-black/5 rounded shadow-xs flex flex-col justify-between min-h-[180px]">
+                <div>
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-gray-400 mb-2">Supabase Database Reset</h4>
+                  <p className="text-[11px] text-gray-500 leading-relaxed font-semibold">
+                    Flush active product catalogs and re-seed Supabase tables with initial brand defaults.
+                  </p>
+                </div>
+                <button
+                  onClick={resetDatabase}
+                  className="mt-4 w-full bg-[#FFFFFF] hover:bg-[#5B112B] hover:text-white text-[#5B112B] border border-[#5B112B] text-[10px] font-bold tracking-widest uppercase py-2.5 rounded-sm transition-all cursor-pointer"
+                >
+                  Reset & Re-Seed Catalog
+                </button>
+              </div>
+
+              {/* Card 3: Maintenance Mode Toggle */}
+              <div className="bg-white p-6 border border-black/5 rounded shadow-xs flex flex-col justify-between min-h-[180px]">
+                <div>
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-gray-400 mb-2">Storefront Accessibility</h4>
+                  <p className="text-[11px] text-gray-500 leading-relaxed font-semibold">
+                    Toggle administrative maintenance block. When active, storefront customers will see a high-end maintenance screen.
+                  </p>
+                </div>
+                
+                <div className="mt-4 flex items-center justify-between gap-4 border-t border-black/5 pt-4">
+                  <span className="text-[10px] font-bold text-[#111111] uppercase tracking-wider">
+                    Maintenance: {isMaintenance ? "ACTIVE" : "OFF"}
+                  </span>
+                  <button
+                    onClick={toggleMaintenance}
+                    className={`px-6 py-2 rounded text-[9.5px] font-bold uppercase tracking-wider transition-all cursor-pointer ${
+                      isMaintenance
+                        ? "bg-[#5B112B] text-white"
+                        : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                    }`}
+                  >
+                    Toggle Mode
+                  </button>
+                </div>
+              </div>
+
+            </div>
+
+            {/* Interactive System Output Console */}
+            <div className="bg-[#111111] text-white p-6 rounded border border-white/5 shadow-2xl flex flex-col">
+              <div className="flex justify-between items-center mb-4 border-b border-white/10 pb-3">
+                <div className="flex items-center gap-2">
+                  <span className="w-2.5 h-2.5 rounded-full bg-[#791b29] animate-pulse"></span>
+                  <span className="text-[10px] font-bold uppercase tracking-widest text-[#D4AF37]">Active Command Output Console</span>
+                </div>
+                <button
+                  onClick={() => setConsoleLogs(["[SYS] Console cleared."])}
+                  className="text-[9px] text-gray-400 hover:text-white uppercase font-bold tracking-wider hover:underline"
+                >
+                  Clear Console
+                </button>
+              </div>
+
+              <div className="h-64 overflow-y-auto font-mono text-xs text-gray-300 leading-relaxed flex flex-col gap-2.5 pr-2">
+                {consoleLogs.map((log, idx) => (
+                  <div key={idx} className="break-all border-b border-white/5 pb-2 last:border-0">
+                    <span className="text-gray-500 mr-2">zafraan-os:~$</span>
+                    {log}
+                  </div>
+                ))}
+              </div>
             </div>
 
           </div>

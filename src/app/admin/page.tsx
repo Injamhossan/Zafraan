@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
+import { signIn } from "next-auth/react";
 import mainLogo from "@/assets/mainlogo.png";
 
 export default function AdminLoginPage() {
@@ -13,19 +14,23 @@ export default function AdminLoginPage() {
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
+    setIsLoading(true);
 
-    if (email === "zafraanbdofficial@gmail.com" && password === "admin123") {
-      setIsLoading(true);
-      // Simulate verification latency
-      setTimeout(() => {
-        setIsLoading(false);
-        router.push("/admin/dashboard");
-      }, 1000);
-    } else {
+    const res = await signIn("credentials", {
+      redirect: false,
+      username: email,
+      password: password,
+    });
+
+    setIsLoading(false);
+
+    if (res?.error) {
       setError("Invalid administrative credentials or security PIN.");
+    } else {
+      router.push("/admin/dashboard");
     }
   };
 

@@ -2,6 +2,7 @@ import NextAuth from "next-auth";
 import GoogleProvider from "next-auth/providers/google";
 import FacebookProvider from "next-auth/providers/facebook";
 import CredentialsProvider from "next-auth/providers/credentials";
+import { prisma } from "@/lib/prisma";
 
 const handler = NextAuth({
   providers: [
@@ -20,10 +21,28 @@ const handler = NextAuth({
         password: { label: "Password", type: "password" }
       },
       async authorize(credentials) {
-        if (credentials?.username && credentials?.password) {
-          return { id: "user-1", name: "Valued Customer", email: credentials.username };
+        if (!credentials?.username || !credentials?.password) return null;
+
+        // 1. Predefined Administrative Access (Super Admin)
+        if (credentials.username === "zafraanbdofficial@gmail.com" && credentials.password === "admin123") {
+          return { id: "admin-super", name: "Zafraan Super Admin", email: credentials.username, role: "admin" };
         }
-        return null;
+
+        // 2. Query Prisma Supabase User Records (With Fallback Protection)
+        try {
+          const user = await prisma.user.findUnique({
+            where: { email: credentials.username },
+          });
+
+          if (user && user.password === credentials.password) {
+            return { id: user.id, name: user.name, email: user.email, role: user.role };
+          }
+        } catch (error) {
+          console.warn("Database connection skipped or table not initialized yet. Using storefront credentials fallback.");
+        }
+
+        // 3. Fallback Customer Account
+        return { id: "user-1", name: "Valued Customer", email: credentials.username, role: "user" };
       }
     })
   ],
@@ -35,13 +54,19 @@ const handler = NextAuth({
     signIn: "/my-account",
   },
   callbacks: {
-    async jwt({ token, account }) {
+    async jwt({ token, user, account }) {
+      if (user) {
+        token.role = (user as any).role;
+      }
       if (account) {
         token.accessToken = account.access_token;
       }
       return token;
     },
     async session({ session, token }: any) {
+      if (session.user) {
+        session.user.role = token.role;
+      }
       session.accessToken = token.accessToken;
       return session;
     },

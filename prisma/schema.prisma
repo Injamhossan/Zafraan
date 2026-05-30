@@ -1,0 +1,41 @@
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// User model for administrative & customer profile persistence
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  password  String
+  name      String
+  role      String   @default("user") // "admin" or "user"
+  createdAt DateTime @default(now())
+}
+
+// Scent product model for the catalog editor database
+model Product {
+  id        String   @id @default(uuid())
+  name      String
+  category  String
+  price     Float
+  longevity String
+  createdAt DateTime @default(now())
+}
+
+// Order model for tracking customer transactions & delivery statuses
+model Order {
+  id             String   @id @default(uuid())
+  customerName   String
+  customerEmail  String
+  product        String
+  total          Float
+  paymentStatus  String   @default("Unpaid") // "Paid" | "Unpaid"
+  deliveryStatus String   @default("Pending") // "Pending" | "Shipped" | "Delivered"
+  createdAt      DateTime @default(now())
+}
