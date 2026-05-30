@@ -1,5 +1,8 @@
+"use client";
+
 import Link from "next/link";
 import Image from "next/image";
+import { usePathname } from "next/navigation";
 import mainLogo from "@/assets/mainlogo.png";
 import bkash from "@/assets/payment/bkash.png";
 import nagod from "@/assets/payment/nagod.jpeg";
@@ -7,6 +10,10 @@ import rocket from "@/assets/payment/rocket.png";
 import upay from "@/assets/payment/upay.png";
 
 export default function Footer() {
+  const pathname = usePathname();
+
+  if (pathname?.startsWith("/admin")) return null;
+
   return (
     <footer className="w-full relative z-20 mt-16 border-t border-black/5">
 

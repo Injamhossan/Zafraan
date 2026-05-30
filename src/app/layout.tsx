@@ -3,6 +3,7 @@ import { Inter, Hind_Siliguri, Playfair_Display } from "next/font/google";
 import "./globals.css";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import SessionProviderWrapper from "@/components/SessionProviderWrapper";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -38,11 +39,13 @@ export default function RootLayout({
       className={`${inter.variable} ${hindSiliguri.variable} ${playfair.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col font-sans bg-[#FFFFFF] text-[#1A1A1A] selection:bg-[#D4AF37] selection:text-white">
-        <Navbar />
-        <main className="flex-1">
-          {children}
-        </main>
-        <Footer />
+        <SessionProviderWrapper>
+          <Navbar />
+          <main className="flex-1">
+            {children}
+          </main>
+          <Footer />
+        </SessionProviderWrapper>
       </body>
     </html>
   );

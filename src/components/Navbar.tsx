@@ -9,6 +9,8 @@ import mainLogo from "@/assets/mainlogo.png";
 export default function Navbar() {
   const pathname = usePathname();
 
+  if (pathname?.startsWith("/admin")) return null;
+
   const navLinks = [
     { name: "HOME", href: "/" },
     { name: "SHOP", href: "/shop" },
