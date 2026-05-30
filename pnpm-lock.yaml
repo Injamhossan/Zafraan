@@ -8,6 +8,9 @@ importers:
 
   .:
     dependencies:
+      jwt:
+        specifier: ^0.2.0
+        version: 0.2.0
       next:
         specifier: 16.2.6
         version: 16.2.6(@babel/core@7.29.7)(babel-plugin-react-compiler@1.0.0)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
@@ -1469,6 +1472,10 @@ packages:
     resolution: {integrity: sha512-ZZow9HBI5O6EPgSJLUb8n2NKgmVWTwCvHGwFuJlMjvLFqlGG6pjirPhtdsseaLZjSibD8eegzmYpUZwoIlj2cQ==}
     engines: {node: '>=4.0'}
 
+  jwt@0.2.0:
+    resolution: {integrity: sha512-+lsJgK3p+dr7yCHO19Ap2uFh+pMSCayPRGjWmf3kYCnYfO+1kqz4DqA8s65HKYIrw5c2NBo+dEvzoZUco09j4Q==}
+    deprecated: Package no longer supported. Contact Support at https://www.npmjs.com/support for more info.
+
   keyv@4.5.4:
     resolution: {integrity: sha512-oxVHkHR/EJf2CNXnWxRLW6mg7JyCCUcG0DtEGmL2ctUo1PNTin1PUil+r/+4r5MpVgC/fn1kjsx7mjSujKqIpw==}
 
@@ -1650,6 +1657,9 @@ packages:
         optional: true
       sass:
         optional: true
+
+  node-base64@0.0.1:
+    resolution: {integrity: sha512-lzWZQXvK7O1g5aKPCTYQJFGJc3MToEMlGmhXN+2UtkRYQz0OiWHoSMkfqQedUYCwWnixvsauH/IFsaFkrspjYQ==}
 
   node-exports-info@1.6.0:
     resolution: {integrity: sha512-pyFS63ptit/P5WqUkt+UUfe+4oevH+bFeIiPPdfb0pFeYEu/1ELnJu5l+5EcTKYL5M7zaAa7S8ddywgXypqKCw==}
@@ -3601,6 +3611,10 @@ snapshots:
       object.assign: 4.1.7
       object.values: 1.2.1
 
+  jwt@0.2.0:
+    dependencies:
+      node-base64: 0.0.1
+
   keyv@4.5.4:
     dependencies:
       json-buffer: 3.0.1
@@ -3753,6 +3767,8 @@ snapshots:
     transitivePeerDependencies:
       - '@babel/core'
       - babel-plugin-macros
+
+  node-base64@0.0.1: {}
 
   node-exports-info@1.6.0:
     dependencies:

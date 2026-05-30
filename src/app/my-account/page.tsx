@@ -2,9 +2,12 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useSession, signIn, signOut } from "next-auth/react";
 import { SocialButton } from "@/components/base/buttons/social-button";
 
 export default function MyAccountPage() {
+  const { data: session, status } = useSession();
+
   const [activeTab, setActiveTab] = useState<"signin" | "register">("signin");
   
   const [loginEmail, setLoginEmail] = useState("");
@@ -18,50 +21,144 @@ export default function MyAccountPage() {
   const [registerMessage, setRegisterMessage] = useState("");
 
   const [isLoading, setIsLoading] = useState(false);
-  const [loadingProvider, setLoadingProvider] = useState<"google" | "facebook" | null>(null);
+  const [loadingProvider, setLoadingProvider] = useState<"google" | "facebook" | "credentials" | null>(null);
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    setLoginMessage("");
     if (loginEmail && loginPassword) {
       setIsLoading(true);
-      setTimeout(() => {
-        setIsLoading(false);
-        setLoginMessage("Successfully logged in! (Mock Session)");
-        setTimeout(() => setLoginMessage(""), 5000);
-      }, 1000);
+      setLoadingProvider("credentials");
+      
+      const res = await signIn("credentials", {
+        redirect: false,
+        username: loginEmail,
+        password: loginPassword,
+      });
+
+      setIsLoading(false);
+      setLoadingProvider(null);
+
+      if (res?.error) {
+        setLoginMessage("Authentication failed. Please verify credentials.");
+      } else {
+        setLoginMessage("Successfully logged in! Redirecting...");
+      }
     }
   };
 
-  const handleRegister = (e: React.FormEvent) => {
+  const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
+    setRegisterMessage("");
     if (registerName && registerEmail && registerPassword) {
       setIsLoading(true);
-      setTimeout(() => {
-        setIsLoading(false);
-        setRegisterMessage("Account created successfully! Welcome to Zafraan.");
-        setTimeout(() => setRegisterMessage(""), 5000);
-      }, 1000);
+      setLoadingProvider("credentials");
+
+      // Auto-authenticate registration as a mock credential
+      const res = await signIn("credentials", {
+        redirect: false,
+        username: registerEmail,
+        password: registerPassword,
+      });
+
+      setIsLoading(false);
+      setLoadingProvider(null);
+
+      if (res?.error) {
+        setRegisterMessage("Registration failed. Please try again.");
+      } else {
+        setRegisterMessage(`Welcome to Zafraan, ${registerName}! Account created.`);
+      }
     }
   };
 
-  const handleSocialAuth = (provider: "google" | "facebook", action: "login" | "register") => {
+  const handleSocialAuth = async (provider: "google" | "facebook") => {
     setIsLoading(true);
     setLoadingProvider(provider);
     
-    // Simulate OAuth Redirect and successful callback
-    setTimeout(() => {
-      setIsLoading(false);
-      setLoadingProvider(null);
-      if (action === "login") {
-        setLoginMessage(`Successfully authenticated via ${provider === "google" ? "Google" : "Facebook"}! Welcome back.`);
-        setTimeout(() => setLoginMessage(""), 5000);
-      } else {
-        setRegisterMessage(`Successfully registered via ${provider === "google" ? "Google" : "Facebook"}! Welcome to Zafraan.`);
-        setTimeout(() => setRegisterMessage(""), 5000);
-      }
-    }, 1500);
+    // Trigger real NextAuth authentication redirect
+    await signIn(provider, { callbackUrl: "/my-account" });
+    
+    setIsLoading(false);
+    setLoadingProvider(null);
   };
 
+  // --- STOREFRONT MEMBER DASHBOARD ---
+  if (status === "authenticated" && session) {
+    return (
+      <div className="bg-[#FFFFFF] min-h-screen pt-20 pb-20 text-[#111111] animate-fade-in">
+        <div className="max-w-[800px] mx-auto px-6">
+          
+          {/* Header */}
+          <div className="mb-12 text-center border-b border-black/5 pb-8">
+            <p className="text-[10px] md:text-xs font-bold tracking-[0.2em] text-[#D4AF37] uppercase mb-4">
+              Customer Portal
+            </p>
+            <h1 className="text-4xl font-serif uppercase tracking-wide mb-3">
+              My Profile
+            </h1>
+            <p className="text-sm text-gray-500 font-medium">
+              Logged in as <span className="text-[#791b29] font-bold">{session.user?.email}</span>
+            </p>
+          </div>
+
+          {/* Dashboard Panel Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
+            
+            <div className="bg-[#FDFCF7] border border-black/5 rounded p-6 shadow-xs flex flex-col gap-2">
+              <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Membership Tier</span>
+              <span className="text-xl font-serif text-[#791b29] font-bold">Oud VIP Club</span>
+              <span className="text-[9.5px] text-gray-400 font-semibold uppercase">Earn points with every bottle</span>
+            </div>
+
+            <div className="bg-[#FDFCF7] border border-black/5 rounded p-6 shadow-xs flex flex-col gap-2">
+              <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Total Scent Points</span>
+              <span className="text-xl font-serif text-[#111111] font-bold">450 PTS</span>
+              <span className="text-[9.5px] text-emerald-600 font-semibold">150 PTS until next reward</span>
+            </div>
+
+            <div className="bg-[#FDFCF7] border border-black/5 rounded p-6 shadow-xs flex flex-col gap-2">
+              <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Recent Purchases</span>
+              <span className="text-xl font-serif text-[#111111] font-bold">1 Order</span>
+              <span className="text-[9.5px] text-[#791b29] font-bold uppercase hover:underline">
+                <Link href="/track-order">Track shipment</Link>
+              </span>
+            </div>
+
+          </div>
+
+          {/* Account details panel */}
+          <div className="bg-white border border-black/5 rounded-md p-8 shadow-sm flex flex-col gap-6">
+            <h3 className="text-md font-serif uppercase tracking-widest border-b border-black/5 pb-4">Personal Details</h3>
+            
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 text-xs text-gray-600 font-semibold">
+              <div>
+                <span className="text-[10px] text-gray-400 block mb-1 uppercase tracking-wider">Account Name</span>
+                <span className="text-sm text-[#111111]">{session.user?.name || "Valued Customer"}</span>
+              </div>
+              <div>
+                <span className="text-[10px] text-gray-400 block mb-1 uppercase tracking-wider">Associated Email</span>
+                <span className="text-sm text-[#111111]">{session.user?.email}</span>
+              </div>
+            </div>
+
+            <div className="border-t border-black/5 pt-6 flex flex-col sm:flex-row justify-between items-center gap-4">
+              <p className="text-xs text-gray-400 font-medium">To modify your credentials or delete your records, contact support.</p>
+              <button
+                onClick={() => signOut({ callbackUrl: "/my-account" })}
+                className="bg-[#5B112B] hover:bg-[#3d0b1d] text-white text-[10.5px] font-bold tracking-widest uppercase px-8 py-3 rounded-sm transition-colors shadow-sm cursor-pointer whitespace-nowrap"
+              >
+                Sign Out
+              </button>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    );
+  }
+
+  // --- STOREFRONT LOGIN & REGISTRATION FORMS ---
   return (
     <div className="bg-[#FFFFFF] min-h-screen pt-20 pb-20">
       <div className="max-w-[500px] mx-auto px-6">
@@ -119,7 +216,11 @@ export default function MyAccountPage() {
                 <p className="text-[10px] text-gray-400 mb-6 uppercase tracking-wider font-semibold">Sign in to your Zafraan account</p>
 
                 {loginMessage && (
-                  <div className="mb-6 p-4 bg-emerald-50 border border-emerald-500/20 text-emerald-800 text-xs font-semibold rounded-sm">
+                  <div className={`mb-6 p-4 text-xs font-semibold rounded-sm text-center border ${
+                    loginMessage.includes("failed") 
+                      ? "bg-red-50 border-red-500/20 text-red-800" 
+                      : "bg-emerald-50 border-emerald-500/20 text-emerald-800"
+                  }`}>
                     {loginMessage}
                   </div>
                 )}
@@ -133,6 +234,7 @@ export default function MyAccountPage() {
                       type="email"
                       value={loginEmail}
                       onChange={(e) => setLoginEmail(e.target.value)}
+                      placeholder="hello@example.com"
                       className="border border-black/10 rounded-sm bg-white px-4 py-3 text-sm focus:outline-none focus:border-[#791b29] transition-colors placeholder-gray-300"
                       required
                     />
@@ -151,6 +253,7 @@ export default function MyAccountPage() {
                       type="password"
                       value={loginPassword}
                       onChange={(e) => setLoginPassword(e.target.value)}
+                      placeholder="••••••••"
                       className="border border-black/10 rounded-sm bg-white px-4 py-3 text-sm focus:outline-none focus:border-[#791b29] transition-colors placeholder-gray-300"
                       required
                     />
@@ -172,7 +275,7 @@ export default function MyAccountPage() {
                     disabled={isLoading}
                     className="w-full bg-[#5B112B] hover:bg-[#3d0b1d] text-white text-[11px] font-bold tracking-widest uppercase py-3.5 rounded-sm transition-colors shadow-sm cursor-pointer disabled:opacity-50 flex items-center justify-center gap-2"
                   >
-                    {isLoading && loadingProvider === null ? (
+                    {isLoading && loadingProvider === "credentials" ? (
                       <div className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin"></div>
                     ) : null}
                     Sign In
@@ -191,7 +294,7 @@ export default function MyAccountPage() {
                   <div className="grid grid-cols-2 gap-3 mt-1">
                     <SocialButton
                       social="google"
-                      onClick={() => handleSocialAuth("google", "login")}
+                      onClick={() => handleSocialAuth("google")}
                       disabled={isLoading}
                       className="w-full"
                     >
@@ -200,7 +303,7 @@ export default function MyAccountPage() {
 
                     <SocialButton
                       social="facebook"
-                      onClick={() => handleSocialAuth("facebook", "login")}
+                      onClick={() => handleSocialAuth("facebook")}
                       disabled={isLoading}
                       className="w-full"
                     >
@@ -218,7 +321,11 @@ export default function MyAccountPage() {
                 <p className="text-[10px] text-gray-400 mb-6 uppercase tracking-wider font-semibold">Join for exclusive Zafraan benefits</p>
 
                 {registerMessage && (
-                  <div className="mb-6 p-4 bg-emerald-50 border border-emerald-500/20 text-emerald-800 text-xs font-semibold rounded-sm">
+                  <div className={`mb-6 p-4 text-xs font-semibold rounded-sm text-center border ${
+                    registerMessage.includes("failed") 
+                      ? "bg-red-50 border-red-500/20 text-red-800" 
+                      : "bg-emerald-50 border-emerald-500/20 text-emerald-800"
+                  }`}>
                     {registerMessage}
                   </div>
                 )}
@@ -260,6 +367,7 @@ export default function MyAccountPage() {
                       type="password"
                       value={registerPassword}
                       onChange={(e) => setRegisterPassword(e.target.value)}
+                      placeholder="••••••••"
                       className="border border-black/10 rounded-sm bg-white px-4 py-3 text-sm focus:outline-none focus:border-[#791b29] transition-colors placeholder-gray-300"
                       required
                     />
@@ -274,7 +382,7 @@ export default function MyAccountPage() {
                     disabled={isLoading}
                     className="w-full bg-[#FFFFFF] hover:bg-[#5B112B] hover:text-white text-[#5B112B] border border-[#5B112B] text-[11px] font-bold tracking-widest uppercase py-3.5 rounded-sm transition-all shadow-sm cursor-pointer disabled:opacity-50 flex items-center justify-center gap-2"
                   >
-                    {isLoading && loadingProvider === null ? (
+                    {isLoading && loadingProvider === "credentials" ? (
                       <div className="w-4 h-4 border-2 border-[#5B112B]/20 border-t-[#5B112B] rounded-full animate-spin"></div>
                     ) : null}
                     Register
@@ -293,7 +401,7 @@ export default function MyAccountPage() {
                   <div className="grid grid-cols-2 gap-3 mt-1">
                     <SocialButton
                       social="google"
-                      onClick={() => handleSocialAuth("google", "register")}
+                      onClick={() => handleSocialAuth("google")}
                       disabled={isLoading}
                       className="w-full"
                     >
@@ -302,7 +410,7 @@ export default function MyAccountPage() {
 
                     <SocialButton
                       social="facebook"
-                      onClick={() => handleSocialAuth("facebook", "register")}
+                      onClick={() => handleSocialAuth("facebook")}
                       disabled={isLoading}
                       className="w-full"
                     >
