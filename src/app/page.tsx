@@ -1,15 +1,21 @@
-import Navbar from "@/components/Navbar";
 import HeroBanner from "@/components/HeroBanner";
 import BestsellersSection from "@/components/BestsellersSection";
-import CategorySection from "@/components/CategorySection";
+import CollectionsGrid from "@/components/CollectionsGrid";
+import OurStorySection from "@/components/OurStorySection";
+import WhyChooseUs from "@/components/WhyChooseUs";
+import Testimonials from "@/components/Testimonials";
+import InstagramGallery from "@/components/InstagramGallery";
 
 export default function Home() {
   return (
-    <div className="min-h-screen bg-[#FFFFFF] text-[#1A1A1A] font-sans selection:bg-[#D4AF37] selection:text-white">
-      <Navbar />
+    <div className="pb-16">
       <HeroBanner />
       <BestsellersSection />
-      <CategorySection />
+      <CollectionsGrid />
+      <OurStorySection />
+      <WhyChooseUs />
+      <Testimonials />
+      <InstagramGallery />
     </div>
   );
 }

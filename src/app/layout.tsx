@@ -1,9 +1,11 @@
 import type { Metadata } from "next";
-import { Poppins, Hind_Siliguri } from "next/font/google";
+import { Inter, Hind_Siliguri, Playfair_Display } from "next/font/google";
 import "./globals.css";
+import Navbar from "@/components/Navbar";
+import Footer from "@/components/Footer";
 
-const poppins = Poppins({
-  variable: "--font-poppins",
+const inter = Inter({
+  variable: "--font-inter",
   weight: ["300", "400", "500", "600", "700"],
   subsets: ["latin"],
 });
@@ -12,6 +14,12 @@ const hindSiliguri = Hind_Siliguri({
   variable: "--font-hind-siliguri",
   weight: ["300", "400", "500", "600", "700"],
   subsets: ["latin", "bengali"],
+});
+
+const playfair = Playfair_Display({
+  variable: "--font-playfair",
+  weight: ["400", "500", "600", "700"],
+  subsets: ["latin"],
 });
 
 export const metadata: Metadata = {
@@ -27,9 +35,15 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${poppins.variable} ${hindSiliguri.variable} h-full antialiased`}
+      className={`${inter.variable} ${hindSiliguri.variable} ${playfair.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col font-[family-name:var(--font-hind-siliguri)]">{children}</body>
+      <body className="min-h-full flex flex-col font-sans bg-[#FFFFFF] text-[#1A1A1A] selection:bg-[#D4AF37] selection:text-white">
+        <Navbar />
+        <main className="flex-1">
+          {children}
+        </main>
+        <Footer />
+      </body>
     </html>
   );
 }
