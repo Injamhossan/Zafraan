@@ -298,12 +298,12 @@ export default function AdminDashboard() {
 
   const resetDatabase = () => {
     setProducts([
-      { id: 1, name: "Oud Royale", category: "Oud & Woody", price: 3450, longevity: "12+ Hours" },
-      { id: 2, name: "Imperial Rose", category: "For Her", price: 2800, longevity: "10+ Hours" },
-      { id: 3, name: "Saffron Gold", category: "Arabic Collection", price: 3900, longevity: "14+ Hours" },
-      { id: 4, name: "Aqua Fresh", category: "Fresh Collection", price: 2200, longevity: "8+ Hours" },
-      { id: 5, name: "Sweet Vanilla", category: "Sweet & Gourmand", price: 2950, longevity: "9+ Hours" },
-      { id: 6, name: "Majestic Oud", category: "Oud & Woody", price: 4200, longevity: "12+ Hours" },
+      { id: 1, name: "Oud Royale", subtitle: "Dark Oud, Sandalwood, Amber", category: "Oud & Woody", pricePerMl: 115, sizes: generateSizes(115), longevity: "12+ Hours", gender: "Unisex", stock: "In Stock" },
+      { id: 2, name: "Imperial Rose", subtitle: "Rose, Peony, White Musk", category: "For Her", pricePerMl: 95, sizes: generateSizes(95), longevity: "10+ Hours", gender: "For Her", stock: "In Stock" },
+      { id: 3, name: "Saffron Gold", subtitle: "Saffron, Leather, Amber", category: "Arabic Collection", pricePerMl: 130, sizes: generateSizes(130), longevity: "14+ Hours", gender: "Unisex", stock: "Low Stock" },
+      { id: 4, name: "Aqua Fresh", subtitle: "Bergamot, Sea Salt, Vetiver", category: "Fresh Collection", pricePerMl: 75, sizes: generateSizes(75), longevity: "8+ Hours", gender: "For Him", stock: "In Stock" },
+      { id: 5, name: "Sweet Vanilla", subtitle: "Vanilla, Caramel, Tonka Bean", category: "Sweet & Gourmand", pricePerMl: 98, sizes: generateSizes(98), longevity: "9+ Hours", gender: "Unisex", stock: "In Stock" },
+      { id: 6, name: "Majestic Oud", subtitle: "Royal Oud, Cedar, Patchouli", category: "Oud & Woody", pricePerMl: 140, sizes: generateSizes(140), longevity: "12+ Hours", gender: "Unisex", stock: "Out of Stock" },
     ]);
     addLog("[DATABASE] Catalog database wiped and reset to default production seed.");
   };
